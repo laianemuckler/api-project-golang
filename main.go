@@ -42,7 +42,6 @@ func main() {
 	r.HandleFunc("/items", createItemHandler).Methods("POST")
 	r.HandleFunc("/items/{id}", updateItemHandler).Methods("PUT")
 	r.HandleFunc("/items/{id}", deleteItemHandler).Methods("DELETE")
-	// r.HandleFunc("/items/{id}", listItemHandler).Methods("GET")
 
 	log.Fatal(http.ListenAndServe(":8000", r))
 }
