@@ -2,11 +2,6 @@
 
 ## Project setup
 
-
-``` bash
-go get -u github.com/gorilla/mux
-```
-
 ``` bash
 go build
 ./api-rest-project
@@ -19,26 +14,25 @@ go build
 GET items
 ```
 
-### Create Book
+### Create item
 ``` bash
 POST items
 ```
 
-### Delete Book
+### Delete item
 ``` bash
 DELETE items/{id}
 ```
 
-### Update Item
+### Update item
 ``` bash
 PUT items/{id}
 ```
 
+### Curl examples
 ```
-# Request example :
-
-# {
-#   "id":"1",
-#   "name":"item name",
-# }
+curl http://localhost:8000/items
+curl -X POST -H "content-type: application/json" http://localhost:8000/items -d '{"id": 4, "name": "mouse"}'
+curl -X PUT -H "content-type: application/json" http://localhost:8000/item{id} -d ''
+curl -X DELETE -H "content-type: application/json" http://localhost:8000/item{id} -d ''
 ```
