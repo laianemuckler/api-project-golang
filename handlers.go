@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"github.com/gorilla/mux"
@@ -24,6 +25,7 @@ func (s *APIServer) Run() {
 	r := mux.NewRouter()
 
 	r.HandleFunc("/item", makeHTTPHandleFunc(s.handleItem))
+	r.HandleFunc("/item/{id}", makeHTTPHandleFunc(s.listItemHandler))
 
 	// endpoints, handler functions and HTTP methods
 	// r.HandleFunc("/items", listItemsHandler).Methods("GET")
@@ -37,7 +39,7 @@ func (s *APIServer) Run() {
 
 func (s *APIServer) handleItem(w http.ResponseWriter, r *http.Request) error {
 	if r.Method == "GET" {
-		return s.listItemHandler(w, r)
+		return s.listItemsHandler(w, r)
 	}
 	if r.Method == "POST" {
 		return s.createItemHandler(w, r)
@@ -52,11 +54,26 @@ func (s *APIServer) handleItem(w http.ResponseWriter, r *http.Request) error {
 }
 
 func (s *APIServer) listItemsHandler(w http.ResponseWriter, r *http.Request) error {
-	return nil
+	items, err := s.database.ListItems()
+	if err != nil {
+		return err
+	}
+
+	return WriteJSON(w, http.StatusOK, items)
 }
 
 func (s *APIServer) createItemHandler(w http.ResponseWriter, r *http.Request) error {
-	return nil
+	createItemRequest := new(CreateItemRequest)
+	if err := json.NewDecoder(r.Body).Decode(createItemRequest); err!= nil {
+		return err
+	}
+
+	item := NewItem(createItemRequest.Name)
+	if err := s.database.CreateItem(item); err != nil {
+		return err
+	}
+
+	return WriteJSON(w, http.StatusOK, item)
 }
 
 func (s *APIServer) updateItemHandler(w http.ResponseWriter, r *http.Request) error {
@@ -68,9 +85,11 @@ func (s *APIServer) deleteItemHandler(w http.ResponseWriter, r *http.Request) er
 }
 
 func (s *APIServer) listItemHandler(w http.ResponseWriter, r *http.Request) error {
-	item := NewItem(1,"Laiane")
+	id := mux.Vars(r)["id"]
 
-	return WriteJSON(w, http.StatusOK, item)
+	fmt.Println(id)
+
+	return WriteJSON(w, http.StatusOK, &Item{})
 }
 
 func WriteJSON(w http.ResponseWriter, statusCode int, value any) error {

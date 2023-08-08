@@ -1,7 +1,5 @@
 package main
 
-import "math/rand"
-
 type CreateItemRequest struct {
 	Name string `json:"name"`
 }
@@ -11,9 +9,8 @@ type Item struct {
 	Name string `json:"name"` // capital letter so can be export and parse
 }
 
-func NewItem(id int, name string) *Item {
+func NewItem(name string) *Item {
 	return &Item{
-		Id:   rand.Intn(10000),
 		Name: name,
 	}
 }
