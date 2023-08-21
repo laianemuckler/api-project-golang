@@ -10,7 +10,7 @@ import (
 type Database interface {
 	CreateItem(*Item) error
 	DeleteItem(int) error
-	UpdateItem(*Item) error
+	UpdateItem(int, *Item) error
 	ListItems() ([]*Item, error)
 	ListItemById(int) (*Item, error)
 }
@@ -20,7 +20,7 @@ type PostgresDB struct {
 }
 
 func PostgresConnection() (*PostgresDB, error) {
-	connStr := "user=postgres dbname=postgres password=password sslmode=disable"
+	connStr := "user=postgres dbname=postgres password=password92 sslmode=disable"
 	db, err := sql.Open("postgres", connStr)
 	if err != nil {
 		return nil, err
@@ -61,26 +61,25 @@ func (d *PostgresDB) CreateItem(item *Item) error {
 	return nil
 }
 
-func (d *PostgresDB) UpdateItem(*Item) error {
-	return nil
+func (d *PostgresDB) UpdateItem(id int, item *Item) error {
+	_, err := d.db.Query("update item set name = $1 where id = $2", item.Name, id)
+	return err
 }
 
 func (d *PostgresDB) DeleteItem(id int) error {
-	return nil
+	_, err := d.db.Query("delete from item where id = $1", id)
+	return err
 }
 
 func (d *PostgresDB) ListItems()([]*Item, error) {
-	rows, err := d.db.Query("SELECT * FROM item")
+	rows, err := d.db.Query("select * from item")
 	if err != nil {
 		return nil, err
 	}
 
 	items := []*Item{}
 	for rows.Next() {
-		item := new(Item)
-		err := rows.Scan(
-			&item.Id,
-			&item.Name)
+		item, err := scanIntoItem(rows)
 	
 		if err != nil {
 			return nil, err
@@ -93,5 +92,23 @@ func (d *PostgresDB) ListItems()([]*Item, error) {
 }
 
 func (d *PostgresDB) ListItemById(id int)(*Item, error) {
-	return nil, nil
+	rows, err := d.db.Query("select * from item where id = $1", id)
+	if err != nil {
+		return nil, err
+	}
+
+	for rows.Next() {
+		return scanIntoItem(rows)
+	}
+
+	return nil, fmt.Errorf("item %d not found", id)
+}
+
+func scanIntoItem(rows *sql.Rows) (*Item, error) {
+	item := new(Item)
+		err := rows.Scan(
+			&item.Id,
+			&item.Name)
+		
+		return item, err
 }

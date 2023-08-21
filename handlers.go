@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
 
 	"github.com/gorilla/mux"
 )
@@ -24,33 +25,15 @@ func NewAPIServer(listenAddress string, database Database) *APIServer {
 func (s *APIServer) Run() {
 	r := mux.NewRouter()
 
-	r.HandleFunc("/item", makeHTTPHandleFunc(s.handleItem))
-	r.HandleFunc("/item/{id}", makeHTTPHandleFunc(s.listItemHandler))
+	//r.HandleFunc("/item", makeHTTPHandleFunc(s.handleItem))
 
-	// endpoints, handler functions and HTTP methods
-	// r.HandleFunc("/items", listItemsHandler).Methods("GET")
-	// r.HandleFunc("/items", createItemHandler).Methods("POST")
-	// r.HandleFunc("/items/{id}", updateItemHandler).Methods("PUT")
-	// r.HandleFunc("/items/{id}", deleteItemHandler).Methods("DELETE")
-	// r.HandleFunc("/items/{id}", listItemHandler).Methods("GET")
+	r.HandleFunc("/items", makeHTTPHandleFunc(s.listItemsHandler)).Methods("GET")
+	r.HandleFunc("/item/{id}", makeHTTPHandleFunc(s.listItemHandler)).Methods("GET")
+	r.HandleFunc("/items", makeHTTPHandleFunc(s.createItemHandler)).Methods("POST")
+	r.HandleFunc("/item/{id}", makeHTTPHandleFunc(s.updateItemHandler)).Methods("PUT")
+	r.HandleFunc("/item/{id}", makeHTTPHandleFunc(s.deleteItemHandler)).Methods("DELETE")
 
 	http.ListenAndServe(s.listenAddress, r)
-}
-
-func (s *APIServer) handleItem(w http.ResponseWriter, r *http.Request) error {
-	if r.Method == "GET" {
-		return s.listItemsHandler(w, r)
-	}
-	if r.Method == "POST" {
-		return s.createItemHandler(w, r)
-	}
-	if r.Method == "DELETE" {
-		return s.deleteItemHandler(w, r)
-	}
-	if r.Method == "PUT" {
-		return s.updateItemHandler(w, r)
-	}
-	return nil
 }
 
 func (s *APIServer) listItemsHandler(w http.ResponseWriter, r *http.Request) error {
@@ -77,19 +60,47 @@ func (s *APIServer) createItemHandler(w http.ResponseWriter, r *http.Request) er
 }
 
 func (s *APIServer) updateItemHandler(w http.ResponseWriter, r *http.Request) error {
-	return nil
+	id, err := getId(r)
+	if err != nil {
+		return err
+	}
+
+	updateItemRequest := new(CreateItemRequest)
+	if err := json.NewDecoder(r.Body).Decode(updateItemRequest); err!= nil {
+		return WriteJSON(w, http.StatusBadRequest, "Invalid request payload")
+	}
+	
+	item := NewItem(updateItemRequest.Name)
+
+	if err := s.database.UpdateItem(id, item); err != nil {
+		return WriteJSON(w, http.StatusInternalServerError, err.Error())
+	}
+	return WriteJSON(w, http.StatusOK, item)
 }
 
 func (s *APIServer) deleteItemHandler(w http.ResponseWriter, r *http.Request) error {
-	return nil
+	id, err := getId(r)
+	if err != nil {
+		return err
+	}
+	if err := s.database.DeleteItem(id); err != nil {
+		return WriteJSON(w, http.StatusInternalServerError, err.Error())
+	}
+	return WriteJSON(w, http.StatusOK, map[string]int{"deleted": id})
 }
 
 func (s *APIServer) listItemHandler(w http.ResponseWriter, r *http.Request) error {
-	id := mux.Vars(r)["id"]
+	id, err := getId(r)
+	if err != nil {
+		return err
+	}
 
-	fmt.Println(id)
+	item, err := s.database.ListItemById(id)
+	if err != nil {
+		return WriteJSON(w, http.StatusInternalServerError, err.Error())
+	}
 
-	return WriteJSON(w, http.StatusOK, &Item{})
+	return WriteJSON(w, http.StatusOK, item)
 }
 
 func WriteJSON(w http.ResponseWriter, statusCode int, value any) error {
@@ -101,7 +112,7 @@ func WriteJSON(w http.ResponseWriter, statusCode int, value any) error {
 type apiFunc func(http.ResponseWriter, *http.Request) error
 
 type ApiError struct {
-	Error string
+	Error string `json:"error"` 
 }
 
 func makeHTTPHandleFunc(f apiFunc) http.HandlerFunc {
@@ -110,4 +121,13 @@ func makeHTTPHandleFunc(f apiFunc) http.HandlerFunc {
 			WriteJSON(w, http.StatusBadRequest, ApiError{Error: err.Error()})
 		}
 	}
+}
+
+func getId(r *http.Request) (int, error) {
+	idParam := mux.Vars(r)["id"]
+	id, err := strconv.Atoi(idParam)
+	if err != nil {
+		return id, fmt.Errorf("invalid id given %s", idParam)
+	}
+	return id, nil
 }

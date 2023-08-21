@@ -3,6 +3,3 @@ build:
 
 run: build
 		 @./bin/api-project-golang
-
-test: 
-	@go test -v ./...

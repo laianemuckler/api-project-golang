@@ -1,7 +1,6 @@
 package main
 
 import (
-	//"fmt"
 	"log"
 )
 
@@ -14,9 +13,8 @@ func main() {
 	if err := database.Init(); err != nil {
 		log.Fatal(err)
 	}
-
-	//fmt.Println("%+v\n", database)
-
+	
+	// colocar a porta de serviço no env
 	server := NewAPIServer(":8000", database)
 	server.Run()
 }
