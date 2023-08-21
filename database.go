@@ -3,7 +3,10 @@ package main
 import (
 	"database/sql"
 	"fmt"
+	"os"
+	"strconv"
 
+	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
 )
 
@@ -20,7 +23,17 @@ type PostgresDB struct {
 }
 
 func PostgresConnection() (*PostgresDB, error) {
-	connStr := "user=postgres dbname=postgres password=password92 sslmode=disable"
+	err := godotenv.Load()
+	if err != nil {
+		 fmt.Println("Error is occurred loading on .env")
+	}
+
+	port, _ := strconv.Atoi(os.Getenv("DB_PORT"))
+	user := os.Getenv("DB_USER")
+	dbname := os.Getenv("DB_NAME")
+	password := os.Getenv("DB_PASSWORD")
+	 
+	connStr := fmt.Sprintf("port=%d user=%s dbname=%s password=%s sslmode=disable", port, user, dbname, password)
 	db, err := sql.Open("postgres", connStr)
 	if err != nil {
 		return nil, err

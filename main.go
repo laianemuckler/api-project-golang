@@ -2,6 +2,9 @@ package main
 
 import (
 	"log"
+	"os"
+
+	"github.com/joho/godotenv"
 )
 
 func main() {
@@ -13,8 +16,13 @@ func main() {
 	if err := database.Init(); err != nil {
 		log.Fatal(err)
 	}
+
+	if err := godotenv.Load(); err != nil {
+    log.Fatal("Error loading .env file")
+  }
+
+	port := os.Getenv("PORT")
 	
-	// colocar a porta de serviço no env
-	server := NewAPIServer(":8000", database)
+	server := NewAPIServer(port, database)
 	server.Run()
 }

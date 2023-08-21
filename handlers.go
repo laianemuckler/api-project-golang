@@ -25,8 +25,6 @@ func NewAPIServer(listenAddress string, database Database) *APIServer {
 func (s *APIServer) Run() {
 	r := mux.NewRouter()
 
-	//r.HandleFunc("/item", makeHTTPHandleFunc(s.handleItem))
-
 	r.HandleFunc("/items", makeHTTPHandleFunc(s.listItemsHandler)).Methods("GET")
 	r.HandleFunc("/item/{id}", makeHTTPHandleFunc(s.listItemHandler)).Methods("GET")
 	r.HandleFunc("/items", makeHTTPHandleFunc(s.createItemHandler)).Methods("POST")
@@ -39,7 +37,7 @@ func (s *APIServer) Run() {
 func (s *APIServer) listItemsHandler(w http.ResponseWriter, r *http.Request) error {
 	items, err := s.database.ListItems()
 	if err != nil {
-		return err
+		return WriteJSON(w, http.StatusInternalServerError, err.Error())
 	}
 
 	return WriteJSON(w, http.StatusOK, items)
@@ -48,12 +46,12 @@ func (s *APIServer) listItemsHandler(w http.ResponseWriter, r *http.Request) err
 func (s *APIServer) createItemHandler(w http.ResponseWriter, r *http.Request) error {
 	createItemRequest := new(CreateItemRequest)
 	if err := json.NewDecoder(r.Body).Decode(createItemRequest); err!= nil {
-		return err
+		return WriteJSON(w, http.StatusInternalServerError, err.Error())
 	}
 
 	item := NewItem(createItemRequest.Name)
 	if err := s.database.CreateItem(item); err != nil {
-		return err
+		return WriteJSON(w, http.StatusInternalServerError, err.Error())
 	}
 
 	return WriteJSON(w, http.StatusOK, item)
@@ -62,7 +60,7 @@ func (s *APIServer) createItemHandler(w http.ResponseWriter, r *http.Request) er
 func (s *APIServer) updateItemHandler(w http.ResponseWriter, r *http.Request) error {
 	id, err := getId(r)
 	if err != nil {
-		return err
+		return WriteJSON(w, http.StatusNotFound, err.Error())
 	}
 
 	updateItemRequest := new(CreateItemRequest)
@@ -81,7 +79,7 @@ func (s *APIServer) updateItemHandler(w http.ResponseWriter, r *http.Request) er
 func (s *APIServer) deleteItemHandler(w http.ResponseWriter, r *http.Request) error {
 	id, err := getId(r)
 	if err != nil {
-		return err
+		return WriteJSON(w, http.StatusNotFound, err.Error())
 	}
 	if err := s.database.DeleteItem(id); err != nil {
 		return WriteJSON(w, http.StatusInternalServerError, err.Error())
@@ -92,7 +90,7 @@ func (s *APIServer) deleteItemHandler(w http.ResponseWriter, r *http.Request) er
 func (s *APIServer) listItemHandler(w http.ResponseWriter, r *http.Request) error {
 	id, err := getId(r)
 	if err != nil {
-		return err
+		return WriteJSON(w, http.StatusNotFound, err.Error())
 	}
 
 	item, err := s.database.ListItemById(id)
@@ -106,7 +104,7 @@ func (s *APIServer) listItemHandler(w http.ResponseWriter, r *http.Request) erro
 func WriteJSON(w http.ResponseWriter, statusCode int, value any) error {
 	w.Header().Add("Content-Type", "application/json")
 	w.WriteHeader(statusCode)
-	return json.NewEncoder(w).Encode(value) //items 
+	return json.NewEncoder(w).Encode(value) 
 }
 
 type apiFunc func(http.ResponseWriter, *http.Request) error
