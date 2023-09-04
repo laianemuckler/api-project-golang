@@ -1,16 +1,16 @@
-FROM golang
 
-RUN mkdir /app
-
-ADD . /app
+# base da nossa imagem
+FROM golang:1.20
 
 WORKDIR /app
 
-COPY . .
+COPY go.mod ./
+COPY main.go ./
+
 RUN go mod tidy
 
-RUN go build -o main ./main.go
+RUN go build -o /api
 
 EXPOSE 3000
 
-CMD [ "/app/main" ]
+CMD [ "/api" ]
