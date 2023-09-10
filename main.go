@@ -2,7 +2,7 @@ package main
 
 import (
 	"log"
-	//"os"
+	"os"
 
 	"github.com/joho/godotenv"
 )
@@ -21,8 +21,8 @@ func main() {
     log.Fatal("Error loading .env file")
   }
 
-	//port := os.Getenv("PORT")
+	port := os.Getenv("PORT")
 	
-	server := NewAPIServer(":8080", database)
+	server := NewAPIServer(port, database)
 	server.Run()
 }
