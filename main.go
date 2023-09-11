@@ -5,10 +5,11 @@ import (
 	"os"
 
 	"github.com/joho/godotenv"
+	"github.com/laiane.muckler/api-rest-project/app"
 )
 
 func main() {
-	database, err := PostgresConnection()
+	database, err := app.PostgresConnection()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -18,11 +19,11 @@ func main() {
 	}
 
 	if err := godotenv.Load(); err != nil {
-    log.Fatal("Error loading .env file")
-  }
+		log.Fatal("Error loading .env file")
+	}
 
 	port := os.Getenv("PORT")
-	
-	server := NewAPIServer(port, database)
+
+	server := app.NewAPIServer(port, database)
 	server.Run()
 }
